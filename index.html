@@ -61,6 +61,10 @@
                     <input type="text" id="responsable" required placeholder="Tu nombre o sede">
                 </div>
                 <div class="form-group">
+                    <label for="imagen_url">URL de Imagen de Referencia (Opcional)</label>
+                    <input type="url" id="imagen_url" placeholder="https://ejemplo.com/foto-suelo.jpg">
+                </div>
+                <div class="form-group">
                     <label for="observaciones">Observaciones</label>
                     <textarea id="observaciones" rows="3" placeholder="Detalles del terreno..."></textarea>
                 </div>
@@ -80,32 +84,17 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // 1. Inicializar el mapa centrado en Fracrán, Misiones (aproximado)
-        const map = L.map('map').setView([-26.80, -54.20], 11);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        // Permitir hacer clic en el mapa para capturar coordenadas automáticamente en el formulario
-        map.on('click', function(e) {
-            document.getElementById('lat').value = e.latlng.lat.toFixed(6);
-            document.getElementById('lng').value = e.latlng.lng.toFixed(6);
-        });
-    </script>
-<script>
         // ==========================================
         // 1. CONFIGURACIÓN DE SUPABASE
         // ==========================================
         const SUPABASE_URL = 'https://qfziifixyjermvvpvqv.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_vJ0PMYf-eHkCX5Rd90VfA_FRnAi...'; // Reemplazá con tu API Key completa de Supabase
+        const SUPABASE_ANON_KEY = 'sb_publishable_vJ0PMYf-eHkCHx5Rd90VfA_FRnAiV5N'; // Clave corregida
 
         const { createClient } = supabase;
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ==========================================
-        // 2. INICIALIZAR EL MAPA
+        // 2. INICIALIZAR EL MAPA (UNA SOLA VEZ)
         // ==========================================
         const map = L.map('map').setView([-26.80, -54.20], 11);
 
@@ -122,8 +111,33 @@
             document.getElementById('lng').value = e.latlng.lng.toFixed(6);
         });
 
+
+
         // ==========================================
-        // 3. CARGAR MUESTRAS EXISTENTES EN EL MAPA
+        // 3. FUNCIÓN PARA CREAR MARCADOR Y POPUP CON IMAGEN
+        // ==========================================
+        function agregarMarcadorAlMapa(lat, lng, ph, responsable, fecha, observaciones, imagenUrl) {
+            let popupContent = `
+                <div style="max-width: 200px;">
+                    <h3 style="margin: 0 0 5px 0; color: #2c3e50;">pH: ${ph}</h3>
+                    <p style="margin: 2px 0;"><b>Responsable:</b> ${responsable || 'No especificado'}</p>
+                    <p style="margin: 2px 0;"><b>Fecha:</b> ${fecha || 'Reciente'}</p>
+                    ${observaciones ? `<p style="margin: 2px 0;"><b>Obs:</b> ${observaciones}</p>` : ''}
+            `;
+
+            if (imagenUrl) {
+                popupContent += `<img src="${imagenUrl}" alt="Referencia de suelo" style="width: 100%; height: auto; border-radius: 4px; margin-top: 6px;" />`;
+            }
+
+            popupContent += `</div>`;
+
+            L.marker([lat, lng])
+                .addTo(markersLayer)
+                .bindPopup(popupContent);
+        }
+
+        // ==========================================
+        // 4. CARGAR MUESTRAS EXISTENTES DESDE SUPABASE
         // ==========================================
         async function cargarMuestras() {
             markersLayer.clearLayers();
@@ -139,22 +153,21 @@
 
             if (data) {
                 data.forEach(muestra => {
-                    const popupContent = `
-                        <b>pH: ${muestra.ph}</b><br>
-                        <b>Responsable:</b> ${muestra.responsable || 'No especificado'}<br>
-                        <b>Fecha:</b> ${muestra.fecha_muestra}<br>
-                        <b>Observaciones:</b> ${muestra.observaciones || 'Ninguna'}
-                    `;
-
-                    L.marker([muestra.latitud, muestra.longitud])
-                        .addTo(markersLayer)
-                        .bindPopup(popupContent);
+                    agregarMarcadorAlMapa(
+                        muestra.latitud, 
+                        muestra.longitud, 
+                        muestra.ph, 
+                        muestra.responsable, 
+                        muestra.fecha_muestra, 
+                        muestra.observaciones, 
+                        muestra.imagen_url
+                    );
                 });
             }
         }
 
         // ==========================================
-        // 4. GUARDAR NUEVA MUESTRA DESDE EL FORMULARIO
+        // 5. GUARDAR NUEVA MUESTRA DESDE EL FORMULARIO
         // ==========================================
         document.getElementById('sampleForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -163,11 +176,12 @@
             const longitud = parseFloat(document.getElementById('lng').value);
             const ph = parseFloat(document.getElementById('ph').value);
             const responsable = document.getElementById('responsable').value;
+            const imagen_url = document.getElementById('imagen_url').value;
             const observaciones = document.getElementById('observaciones').value;
 
             const { error } = await _supabase
                 .from('muestras')
-                .insert([{ latitud, longitud, ph, responsable, observaciones }]);
+                .insert([{ latitud, longitud, ph, responsable, imagen_url, observaciones }]);
 
             if (error) {
                 alert('Error al guardar la muestra: ' + error.message);
