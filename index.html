@@ -3,87 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Protopía Fracrán - Monitoreo de pH de Suelo</title>
-    
+    <title>Protopía Fracrán — Monitoreo de pH de Suelos</title>
+    <link rel="icon" type="image/jpeg" href="https://i.ibb.co/pr2XwD6x/logo-protopia.jpg">
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    
-    <!-- Estilos generales -->
+
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        body { background-color: #f4f7f6; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
-        header { background-color: #2c3e50; color: white; padding: 1rem; text-align: center; }
-        .container { display: flex; flex: 1; flex-wrap: wrap; padding: 1rem; gap: 1rem; }
-        #map { flex: 2; min-height: 420px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
-        .sidebar { flex: 1; background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-width: 300px; }
-        h2 { margin-bottom: 1rem; font-size: 1.2rem; color: #2c3e50; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; font-size: 0.9rem; }
-        input, textarea { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
-        button { background-color: #27ae60; color: white; border: none; padding: 0.75rem 1rem; width: 100%; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #219653; }
-        footer { text-align: center; padding: 1rem; background-color: #34495e; color: white; font-size: 0.85rem; }
+        :root {
+            --bg-page: #f2f5f2;
+            --bg-card: #ffffff;
+            --primary: #1f4e3d;
+            --primary-dark: #16382c;
+            --accent: #2e8b57;
+            --accent-hover: #246e45;
+            --text-main: #1e2923;
+            --text-muted: #5c6b62;
+            --border-color: #dce4de;
+            --focus-ring: rgba(46, 139, 87, 0.22);
+            --radius-lg: 14px;
+            --radius-md: 8px;
+            --shadow-sm: 0 4px 16px rgba(20, 40, 30, 0.06);
+            --shadow-md: 0 10px 28px rgba(20, 40, 30, 0.10);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* Encabezado */
+        header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            color: #ffffff;
+            padding: 1.15rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-inner {
+            max-width: 1360px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.85rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+        }
+
+        .logo-img {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #ffffff;
+            padding: 2px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+            flex-shrink: 0;
+        }
+
+        .brand h1 {
+            font-size: 1.55rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .brand p {
+            font-size: 0.92rem;
+            color: #d7ebe0;
+            margin-top: 0.15rem;
+        }
+
+        .badge-info {
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #eef8f2;
+            padding: 0.4rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        /* Contenedor principal */
+        .container {
+            max-width: 1360px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.85fr 1fr;
+            gap: 1.25rem;
+            padding: 1.25rem;
+            flex: 1;
+        }
+
+        /* Mapa */
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: 540px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            z-index: 1;
+            position: relative;
+        }
 
         /* Leyenda de rangos de pH */
         .legend {
-            background: white;
-            padding: 10px 12px;
-            border-radius: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            font-size: 0.85rem;
-            line-height: 1.5;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
+            font-size: 0.84rem;
+            line-height: 1.55;
+            color: var(--text-main);
         }
-        .legend-item { display: flex; align-items: center; gap: 8px; }
-        .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 2px solid #fff; box-shadow: 0 0 2px rgba(0,0,0,0.5); }
 
-        @media (max-width: 768px) {
-            .container { flex-direction: column; }
-            #map { height: 350px; }
+        .legend-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--primary-dark);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-dot {
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.45);
+            flex-shrink: 0;
+        }
+
+        /* Panel lateral */
+        .sidebar {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            align-self: start;
+        }
+
+        .sidebar-header {
+            margin-bottom: 1.15rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.2rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .sidebar-header p {
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        .coords-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .form-group {
+            margin-bottom: 0.95rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.35rem;
+            font-weight: 600;
+            font-size: 0.86rem;
+            color: var(--text-main);
+        }
+
+        .hint {
+            display: block;
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 0.62rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            color: var(--text-main);
+            background-color: #fbfdfb;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 76px;
+        }
+
+        button[type="submit"] {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: #ffffff;
+            border: none;
+            padding: 0.82rem 1rem;
+            width: 100%;
+            border-radius: var(--radius-md);
+            font-size: 0.96rem;
+            cursor: pointer;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            box-shadow: 0 4px 12px rgba(46, 139, 87, 0.25);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+
+        button[type="submit"]:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(46, 139, 87, 0.32);
+        }
+
+        button[type="submit"]:active {
+            transform: translateY(0);
+        }
+
+        /* Estilo de Popup en Leaflet */
+        .popup-card {
+            max-width: 230px;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .popup-ph {
+            display: inline-block;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            margin-bottom: 0.45rem;
+        }
+
+        .popup-row {
+            font-size: 0.84rem;
+            color: var(--text-main);
+            margin: 0.22rem 0;
+        }
+
+        .popup-img {
+            width: 100%;
+            height: 135px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 0.55rem;
+            border: 1px solid var(--border-color);
+            display: block;
+        }
+
+        /* Pie de página */
+        footer {
+            text-align: center;
+            padding: 0.95rem 1rem;
+            background-color: var(--primary-dark);
+            color: #d3e5db;
+            font-size: 0.84rem;
+            margin-top: auto;
+        }
+
+        /* Responsivo */
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            #map {
+                min-height: 380px;
+            }
+
+            .coords-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Protopía Fracrán</h1>
-        <p>Monitoreo Comunitario de pH de Suelos</p>
+        <div class="header-inner">
+            <div class="brand">
+                <img src="https://i.ibb.co/pr2XwD6x/logo-protopia.jpg" alt="Logo Protopía Fracrán" class="logo-img">
+                <div>
+                    <h1>Protopía Fracrán</h1>
+                    <p>Monitoreo Comunitario de pH de Suelos</p>
+                </div>
+            </div>
+            <span class="badge-info">Clic en el mapa para georreferenciar</span>
+        </div>
     </header>
 
     <div class="container">
-        <!-- Mapa interactivo -->
         <div id="map"></div>
 
-        <!-- Panel de carga de muestras -->
-        <div class="sidebar">
-            <h2>Registrar Nueva Muestra</h2>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Registrar Nueva Muestra</h2>
+                <p>Completá los datos del punto seleccionado en el mapa.</p>
+            </div>
+
             <form id="sampleForm">
-                <div class="form-group">
-                    <label for="lat">Latitud</label>
-                    <input type="number" step="any" id="lat" required placeholder="Haz clic en el mapa...">
+                <div class="coords-grid">
+                    <div class="form-group">
+                        <label for="lat">Latitud</label>
+                        <input type="number" step="any" id="lat" required placeholder="-26.800000">
+                    </div>
+                    <div class="form-group">
+                        <label for="lng">Longitud</label>
+                        <input type="number" step="any" id="lng" required placeholder="-54.200000">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="lng">Longitud</label>
-                    <input type="number" step="any" id="lng" required placeholder="Haz clic en el mapa...">
-                </div>
+
                 <div class="form-group">
                     <label for="ph">Valor de pH (0 - 14)</label>
                     <input type="number" step="0.1" min="0" max="14" id="ph" required placeholder="Ej: 6.5">
                 </div>
+
                 <div class="form-group">
                     <label for="responsable">Responsable</label>
-                    <input type="text" id="responsable" required placeholder="Tu nombre o sede">
+                    <input type="text" id="responsable" required placeholder="Nombre, equipo o sede">
                 </div>
+
                 <div class="form-group">
-                    <label for="imagen_url">URL de Imagen de Referencia (Opcional)</label>
-                    <input type="url" id="imagen_url" placeholder="https://ejemplo.com/foto-suelo.jpg">
+                    <label for="imagen_url">URL directa de imagen (Opcional)</label>
+                    <input type="url" id="imagen_url" placeholder="https://i.ibb.co/.../foto.jpg">
+                    <span class="hint">Usá el enlace directo de la imagen (no el enlace del visor).</span>
                 </div>
+
                 <div class="form-group">
                     <label for="observaciones">Observaciones</label>
-                    <textarea id="observaciones" rows="3" placeholder="Detalles del terreno..."></textarea>
+                    <textarea id="observaciones" placeholder="Tipo de cobertura, humedad, pendiente..."></textarea>
                 </div>
+
                 <button type="submit">Guardar Muestra</button>
             </form>
-        </div>
+        </aside>
     </div>
 
     <footer>
@@ -92,138 +385,131 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
         // ==========================================
-        // 1. CONFIGURACIÓN DE SUPABASE (REST API)
+        // 1. CONFIGURACIÓN DE SUPABASE
         // ==========================================
         const SUPABASE_URL = 'https://qfziifixyjermqvvpvqv.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_vJ0PMYf-eHkCHx5Rd9OVfA_FRnAiV5N';
 
-        const headers = {
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation"
-        };
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ==========================================
-        // 2. INICIALIZAR EL MAPA Y LEYENDA
+        // 2. INICIALIZAR EL MAPA Y LEYENDA DE pH
         // ==========================================
         const map = L.map('map').setView([-26.80, -54.20], 11);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            subdomains: ['a', 'b', 'c']
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         const markersLayer = L.layerGroup().addTo(map);
 
-        // Leyenda visual en el mapa
-        const legend = L.control({ position: 'bottomleft' });
-        legend.onAdd = function () {
+        function obtenerColorPorPh(ph) {
+            const valor = parseFloat(ph);
+            if (isNaN(valor)) return '#7f8c8d';
+            if (valor < 6.0) return '#e74c3c';  // Ácido
+            if (valor <= 7.5) return '#27ae60'; // Neutro / Óptimo
+            return '#2980b9';                   // Alcalino
+        }
+
+        function obtenerEtiquetaPh(ph) {
+            const valor = parseFloat(ph);
+            if (isNaN(valor)) return 'Sin dato';
+            if (valor < 6.0) return 'Ácido';
+            if (valor <= 7.5) return 'Neutro / Óptimo';
+            return 'Alcalino';
+        }
+
+        const legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function() {
             const div = L.DomUtil.create('div', 'legend');
             div.innerHTML = `
-                <b>Rango de pH</b>
-                <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Ácido (&lt; 6.0)</div>
-                <div class="legend-item"><span class="legend-dot" style="background:#27ae60;"></span> Neutro / Óptimo (6.0 – 7.5)</div>
-                <div class="legend-item"><span class="legend-dot" style="background:#2980b9;"></span> Alcalino (&gt; 7.5)</div>
+                <div class="legend-title">Rango de pH</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span>Ácido (&lt; 6.0)</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#27ae60;"></span>Neutro (6.0 – 7.5)</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#2980b9;"></span>Alcalino (&gt; 7.5)</div>
             `;
             return div;
         };
         legend.addTo(map);
 
-        // Capturar coordenadas al hacer clic en el mapa
         map.on('click', function(e) {
             document.getElementById('lat').value = e.latlng.lat.toFixed(6);
             document.getElementById('lng').value = e.latlng.lng.toFixed(6);
         });
 
-        // Determinar color y etiqueta según el pH
-        function obtenerEstiloPh(ph) {
-            const valor = parseFloat(ph);
-            if (valor < 6.0) {
-                return { color: '#c0392b', fillColor: '#e74c3c', etiqueta: 'Ácido' };
-            } else if (valor <= 7.5) {
-                return { color: '#1e8449', fillColor: '#27ae60', etiqueta: 'Neutro / Óptimo' };
-            } else {
-                return { color: '#1f618d', fillColor: '#2980b9', etiqueta: 'Alcalino' };
-            }
-        }
-
         // ==========================================
-        // 3. CREAR MARCADOR COLOREADO Y POPUP CON IMAGEN
+        // 3. CREAR MARCADOR COLOREADO Y POPUP
         // ==========================================
         function agregarMarcadorAlMapa(lat, lng, ph, responsable, fecha, observaciones, imagenUrl) {
-            const estilo = obtenerEstiloPh(ph);
+            const colorPh = obtenerColorPorPh(ph);
+            const etiquetaPh = obtenerEtiquetaPh(ph);
 
             let popupContent = `
-                <div style="max-width: 220px;">
-                    <h3 style="margin: 0 0 5px 0; color: ${estilo.fillColor};">pH: ${ph} (${estilo.etiqueta})</h3>
-                    <p style="margin: 2px 0;"><b>Responsable:</b> ${responsable || 'No especificado'}</p>
-                    <p style="margin: 2px 0;"><b>Fecha:</b> ${fecha ? fecha.substring(0, 10) : 'Reciente'}</p>
-                    ${observaciones ? `<p style="margin: 2px 0;"><b>Obs:</b> ${observaciones}</p>` : ''}
+                <div class="popup-card">
+                    <div class="popup-ph" style="background-color: ${colorPh};">pH: ${ph} (${etiquetaPh})</div>
+                    <p class="popup-row"><strong>Responsable:</strong> ${responsable || 'No especificado'}</p>
+                    <p class="popup-row"><strong>Fecha:</strong> ${fecha || 'Reciente'}</p>
+                    ${observaciones ? `<p class="popup-row"><strong>Obs:</strong> ${observaciones}</p>` : ''}
             `;
 
-            if (imagenUrl && imagenUrl.trim() !== '') {
-                popupContent += `
-                    <img src="${imagenUrl}" alt="Referencia de suelo"
-                         style="width: 100%; max-height: 150px; object-fit: cover; border-radius: 4px; margin-top: 6px;"
-                         onerror="this.style.display='none';" />
-                `;
+            if (imagenUrl) {
+                popupContent += `<img src="${imagenUrl}" alt="Referencia de suelo" class="popup-img" onerror="this.style.display='none';" />`;
             }
 
             popupContent += `</div>`;
 
             L.circleMarker([lat, lng], {
                 radius: 9,
-                color: estilo.color,
-                fillColor: estilo.fillColor,
-                fillOpacity: 0.85,
-                weight: 2
+                fillColor: colorPh,
+                color: '#ffffff',
+                weight: 2.5,
+                opacity: 1,
+                fillOpacity: 0.9
             })
-            .addTo(markersLayer)
-            .bindPopup(popupContent);
+                .addTo(markersLayer)
+                .bindPopup(popupContent);
         }
 
         // ==========================================
-        // 4. CARGAR MUESTRAS EXISTENTES DESDE SUPABASE
+        // 4. CARGAR MUESTRAS EXISTENTES
         // ==========================================
         async function cargarMuestras() {
             markersLayer.clearLayers();
-            
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/muestras?select=*`, {
-                    method: 'GET',
-                    headers: headers
+
+            const { data, error } = await _supabase
+                .from('muestras')
+                .select('*');
+
+            if (error) {
+                console.error('Error al cargar muestras:', error.message);
+                return;
+            }
+
+            if (data) {
+                data.forEach(muestra => {
+                    agregarMarcadorAlMapa(
+                        muestra.latitud,
+                        muestra.longitud,
+                        muestra.ph,
+                        muestra.responsable,
+                        muestra.fecha_muestra,
+                        muestra.observaciones,
+                        muestra.imagen_url
+                    );
                 });
-
-                if (!response.ok) {
-                    throw new Error('Error al obtener los datos de la base');
-                }
-
-                const data = await response.json();
-                if (data) {
-                    data.forEach(muestra => {
-                        agregarMarcadorAlMapa(
-                            muestra.latitud, 
-                            muestra.longitud, 
-                            muestra.ph, 
-                            muestra.responsable, 
-                            muestra.fecha_muestra, 
-                            muestra.observaciones, 
-                            muestra.imagen_url
-                        );
-                    });
-                }
-            } catch (error) {
-                console.error('Error al cargar muestras:', error);
             }
         }
 
         // ==========================================
-        // 5. GUARDAR NUEVA MUESTRA DESDE EL FORMULARIO
+        // 5. GUARDAR NUEVA MUESTRA
         // ==========================================
         document.getElementById('sampleForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -231,31 +517,23 @@
             const latitud = parseFloat(document.getElementById('lat').value);
             const longitud = parseFloat(document.getElementById('lng').value);
             const ph = parseFloat(document.getElementById('ph').value);
-            const responsable = document.getElementById('responsable').value;
-            const imagen_url = document.getElementById('imagen_url').value.trim() || null;
-            const observaciones = document.getElementById('observaciones').value.trim() || null;
+            const responsable = document.getElementById('responsable').value.trim();
+            const imagen_url = document.getElementById('imagen_url').value.trim();
+            const observaciones = document.getElementById('observaciones').value.trim();
 
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/muestras`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({ latitud, longitud, ph, responsable, imagen_url, observaciones })
-                });
+            const { error } = await _supabase
+                .from('muestras')
+                .insert([{ latitud, longitud, ph, responsable, imagen_url, observaciones }]);
 
-                if (!response.ok) {
-                    const errData = await response.text();
-                    throw new Error(errData || 'Error desconocido al insertar');
-                }
-
+            if (error) {
+                alert('Error al guardar la muestra: ' + error.message);
+            } else {
                 alert('¡Muestra guardada con éxito!');
                 document.getElementById('sampleForm').reset();
                 cargarMuestras();
-            } catch (error) {
-                alert('Error al guardar la muestra: ' + error.message);
             }
         });
 
-        // Cargar las muestras al abrir la página
         cargarMuestras();
     </script>
 </body>
